@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "easykillmob",
+  "version": "1.0.0",
+  "name": "EasyKillMob",
+  "description": "Automatic mob attack client mod.",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.easykillmob.EasyKillMob"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.14.21",
+    "minecraft": "~1.20.1",
+    "java": ">=17",
+    "fabric-api": "*"
+  }
+}
