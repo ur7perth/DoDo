@@ -1,66 +1,56 @@
 package com.easykillmob;
 
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.util.Hand;
 
 public class AutoAttack {
 
     public static boolean enabled = false;
 
-    private static int timer = 0;
-
+    private static float accumulator = 0f;
     private static MobEntity lastTarget = null;
 
     public static void toggle() {
-
         enabled = !enabled;
-
-        timer = 0;
+        accumulator = 0f;
         lastTarget = null;
     }
 
     public static void disable() {
-
         enabled = false;
-
-        timer = 0;
+        accumulator = 0f;
         lastTarget = null;
     }
 
     public static void tick(MinecraftClient client) {
 
-        if (!enabled) {
-            return;
-        }
+        if (!enabled) return;
 
         if (client.player == null || client.world == null) {
             disable();
             return;
         }
 
-        // Stop after player death
-        if (client.player.isDead()) {
+        if (!client.player.isAlive()) {
             disable();
             return;
         }
 
-        // Do not attack while using an item
         if (client.player.isUsingItem()) {
             return;
         }
 
-        // Stop when previous target dies
         if (lastTarget != null && !lastTarget.isAlive()) {
             disable();
             return;
         }
 
-        // Check crosshair target
         if (!(client.crosshairTarget instanceof EntityHitResult hit)) {
             lastTarget = null;
-            timer = 0;
+            accumulator = 0f;
             return;
         }
 
@@ -68,7 +58,7 @@ public class AutoAttack {
 
         if (!(entity instanceof MobEntity mob)) {
             lastTarget = null;
-            timer = 0;
+            accumulator = 0f;
             return;
         }
 
@@ -78,23 +68,25 @@ public class AutoAttack {
 
         if (lastTarget != mob) {
             lastTarget = mob;
-            timer = 0;
+            accumulator = 0f;
         }
 
-        timer++;
+        accumulator = Math.min(
+                1f,
+                accumulator + ModConfig.cps / 20f
+        );
 
-        int delay = Math.max(1, 20 / ModConfig.cps);
+        if (accumulator >= 1f &&
+                client.player.getAttackCooldownProgress(0f) >= 1f) {
 
-        if (timer >= delay) {
+            accumulator = 0f;
 
-            timer = 0;
+            client.interactionManager.attackEntity(
+                    client.player,
+                    mob
+            );
 
-            // Respect Minecraft's normal attack cooldown
-            if (client.player.getAttackCooldownProgress(0.0F) >= 1.0F) {
-
-                // Perform the normal client attack action
-                client.doAttack();
-            }
+            client.player.swingHand(Hand.MAIN_HAND);
         }
     }
 }
